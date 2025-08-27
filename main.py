@@ -73,7 +73,7 @@ app = FastAPI(
     title="API do Ritum",
     description="Backend para o SaaS jurídico Ritum, gerenciando processos, clientes e mais.",
     version="0.1.0",
-    lifespan=lifespan
+    # lifespan=lifespan # Desativado temporariamente para depuração
 )
 
 # --- Montagem de diretórios estáticos ---
