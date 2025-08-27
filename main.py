@@ -5,7 +5,7 @@ import requests
 from pathlib import Path
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, Browser
 
 # Adições para o Gerador de Documentos
 from fastapi.staticfiles import StaticFiles
@@ -35,32 +35,38 @@ from app.scraper import scrape_tjsp_process
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    browser_ws_url = os.getenv("BROWSERLESS_URL")
-    if not browser_ws_url:
-        raise RuntimeError("A variável de ambiente BROWSERLESS_URL não está definida.")
-
-    playwright = await async_playwright().start()
+    browser = None
+    print("--- Iniciando o ciclo de vida da aplicação (lifespan) ---")
     try:
-        browser = await playwright.chromium.connect(browser_ws_url)
-        app.state.browser = browser
-        app.state.playwright = playwright
-        print("INFO: Conectado ao navegador remoto com sucesso.")
-        yield
-    except Exception as e:
-        print(f"ERRO: Não foi possível conectar ao navegador remoto: {e}")
-        # Mesmo com falha na conexão, precisamos garantir que o playwright pare.
-        yield # Permite que a aplicação inicie, mas os endpoints de scraping falharão.
-    finally:
-        # Shutdown
-        print("INFO: Iniciando processo de shutdown do browser e Playwright.")
-        if 'browser' in app.state and app.state.browser and not app.state.browser.is_closed():
-            await app.state.browser.close()
-            print("INFO: Conexão com o navegador remoto fechada.")
+        # Pega a URL de conexão da variável de ambiente que configuramos no Render
+        browserless_url = os.getenv("BROWSERLESS_URL")
         
-        if 'playwright' in app.state and app.state.playwright:
-            await app.state.playwright.stop()
-            print("INFO: Instância do Playwright parada.")
+        if not browserless_url:
+            raise ValueError("A variável de ambiente BROWSERLESS_URL não está configurada!")
+
+        print(f"Tentando conectar ao navegador remoto em: {browserless_url[:40]}...") # Mostra parte da URL para depuração
+
+        async with async_playwright() as p:
+            # Aumentamos o timeout para dar mais tempo para a conexão em ambientes de nuvem
+            browser: Browser = await p.chromium.connect(browserless_url, timeout=90000) 
+            print("✅ Conectado ao navegador remoto com sucesso!")
+            app.state.browser = browser
+            yield # A aplicação fica rodando aqui
+
+    except Exception as e:
+        # Se qualquer erro acontecer, vamos imprimi-lo de forma clara
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(f"ERRO CRÍTICO AO CONECTAR COM O PLAYWRIGHT: {type(e).__name__}")
+        print(f"Detalhes do erro: {e}")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # Deixamos a aplicação continuar sem o navegador para podermos ver os logs
+        # Em um cenário de produção real, poderíamos querer que a aplicação parasse aqui.
+        yield
+    finally:
+        # Garante que, se a conexão foi bem-sucedida, ela será fechada
+        if hasattr(app.state, 'browser') and app.state.browser:
+            await app.state.browser.close()
+            print("--- Conexão com o navegador remoto fechada ---")
 
 app = FastAPI(
     title="API do Ritum",
