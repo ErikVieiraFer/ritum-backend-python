@@ -36,23 +36,31 @@ from app.scraper import scrape_tjsp_process
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    browser_ws_url = os.getenv("BROWSERLESS_URL")
+    if not browser_ws_url:
+        raise RuntimeError("A variável de ambiente BROWSERLESS_URL não está definida.")
+
     playwright = await async_playwright().start()
-    browser = await playwright.chromium.launch(headless=True)
-    app.state.browser = browser
-    app.state.playwright = playwright
-    yield
-    # Shutdown
     try:
-        if app.state.browser and not app.state.browser.is_closed():
+        browser = await playwright.chromium.connect(browser_ws_url)
+        app.state.browser = browser
+        app.state.playwright = playwright
+        print("INFO: Conectado ao navegador remoto com sucesso.")
+        yield
+    except Exception as e:
+        print(f"ERRO: Não foi possível conectar ao navegador remoto: {e}")
+        # Mesmo com falha na conexão, precisamos garantir que o playwright pare.
+        yield # Permite que a aplicação inicie, mas os endpoints de scraping falharão.
+    finally:
+        # Shutdown
+        print("INFO: Iniciando processo de shutdown do browser e Playwright.")
+        if 'browser' in app.state and app.state.browser and not app.state.browser.is_closed():
             await app.state.browser.close()
-    except Exception as e:
-        print(f"Ignorando erro ao fechar o browser: {e}") # Log do erro
-    
-    try:
-        if app.state.playwright:
+            print("INFO: Conexão com o navegador remoto fechada.")
+        
+        if 'playwright' in app.state and app.state.playwright:
             await app.state.playwright.stop()
-    except Exception as e:
-        print(f"Ignorando erro ao parar o Playwright: {e}") # Log do erro
+            print("INFO: Instância do Playwright parada.")
 
 app = FastAPI(
     title="API do Ritum",
