@@ -1,0 +1,1 @@
+This is a placeholder for a .docx template file. The real file would contain placeholders like {{ client_name }}, {{ client_cpf }}, {{ lawyer_name }}, {{ lawyer_oab }}, etc.
