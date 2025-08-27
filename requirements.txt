@@ -13,4 +13,5 @@ websockets
 requests
 python-docx
 docxtpl
-docxcomposeemail-validator 
+docxcompose
+email-validator
