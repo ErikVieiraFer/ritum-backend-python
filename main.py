@@ -73,7 +73,7 @@ app = FastAPI(
     title="API do Ritum",
     description="Backend para o SaaS jurídico Ritum, gerenciando processos, clientes e mais.",
     version="0.1.0",
-    # lifespan=lifespan # Desativado temporariamente para depuração
+    lifespan=lifespan
 )
 
 # --- Montagem de diretórios estáticos ---
@@ -83,12 +83,35 @@ static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Configuração do CORS
-origins = ["*"]
+# Lê as origens permitidas da variável de ambiente, separadas por vírgula.
+# Isso permite configurar facilmente quais frontends podem se comunicar com a API.
+# Ex: "http://localhost:3000,http://127.0.0.1:3000,https://app.ritum.com.br"
+origins_str = os.getenv("CORS_ORIGINS", "")
+origins = [origin.strip() for origin in origins_str.split(",")] if origins_str else []
+
+# Adiciona origens padrão para desenvolvimento se nenhuma for especificada.
+# Inclui a origem "null" para permitir testes de arquivos HTML locais.
+if not origins:
+    origins.extend([
+        "http://localhost",
+        "http://localhost:8080",
+        "http://localhost:3000",
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "null",
+    ])
+
+# Para produção, é uma boa prática adicionar a URL da própria API para health checks e portais de documentação.
+# Ex: https://ritum-backend-python.onrender.com
+render_url = os.getenv("RENDER_EXTERNAL_URL")
+if render_url:
+    origins.append(render_url)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
