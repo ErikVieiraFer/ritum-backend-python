@@ -8,8 +8,8 @@ python-dotenv
 passlib[bcrypt]
 python-jose[cryptography]
 google-generativeai
-playwright
-websockets
+playwright==1.54.0
+websockets==15.0.1
 requests
 python-docx
 docxtpl
