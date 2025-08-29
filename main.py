@@ -34,46 +34,10 @@ from app import crud, models, schemas, security
 from app.dependencies import get_db, get_current_user
 from app.scraper import scrape_tjsp_process
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    browser = None
-    print("--- Iniciando o ciclo de vida da aplicação (lifespan) ---")
-    try:
-        # Pega a URL de conexão da variável de ambiente que configuramos no Render
-        browserless_url = os.getenv("BROWSERLESS_URL")
-        
-        if not browserless_url:
-            raise ValueError("A variável de ambiente BROWSERLESS_URL não está configurada!")
-
-        print(f"Tentando conectar ao navegador remoto em: {browserless_url[:40]}...") # Mostra parte da URL para depuração
-
-        async with async_playwright() as p:
-            # Aumentamos o timeout para dar mais tempo para a conexão em ambientes de nuvem
-            browser: Browser = await p.chromium.connect(browserless_url, timeout=90000) 
-            print("✅ Conectado ao navegador remoto com sucesso!")
-            app.state.browser = browser
-            yield # A aplicação fica rodando aqui
-
-    except Exception as e:
-        # Se qualquer erro acontecer, vamos imprimi-lo de forma clara
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print(f"ERRO CRÍTICO AO CONECTAR COM O PLAYWRIGHT: {type(e).__name__}")
-        print(f"Detalhes do erro: {e}")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        # Deixamos a aplicação continuar sem o navegador para podermos ver os logs
-        # Em um cenário de produção real, poderíamos querer que a aplicação parasse aqui.
-        yield
-    finally:
-        # Garante que, se a conexão foi bem-sucedida, ela será fechada
-        if hasattr(app.state, 'browser') and app.state.browser:
-            await app.state.browser.close()
-            print("--- Conexão com o navegador remoto fechada ---")
-
 app = FastAPI(
     title="API do Ritum",
     description="Backend para o SaaS jurídico Ritum, gerenciando processos, clientes e mais.",
-    version="0.1.0",
-    lifespan=lifespan
+    version="0.1.0"
 )
 
 # --- Montagem de diretórios estáticos ---
@@ -412,18 +376,45 @@ def search_jurisprudence_datajud(request: schemas.JurisprudenceSearchRequest, cu
 # --- Endpoints de Teste do Scraper (Fase 2) ---
 
 @app.post("/api/v1/scrape_test/{process_number}", tags=["Busca de Jurisprudência (RAG)"])
-async def test_scrape_process(process_number: str, request: Request, current_user: models.User = Depends(get_current_user)):
+async def test_scrape_process(process_number: str, current_user: models.User = Depends(get_current_user)):
+    browser = None
     try:
-        if len(process_number) == 20:
-            formatted_number = f"{process_number[:7]}-{process_number[7:9]}.{process_number[9:13]}.{process_number[13]}.{process_number[14:16]}.{process_number[16:]}"
-        else:
-            formatted_number = process_number
-        screenshot_path = await scrape_tjsp_process(request.app.state.browser, formatted_number)
-        return {"message": "Scraping test completed.", "screenshot_path": screenshot_path}
+        # Pega a URL de conexão da variável de ambiente
+        browserless_url = os.getenv("BROWSERLESS_URL")
+        if not browserless_url:
+            raise HTTPException(status_code=503, detail="A variável de ambiente BROWSERLESS_URL não está configurada.")
+
+        async with async_playwright() as p:
+            try:
+                # Conecta ao navegador remoto com um timeout
+                browser: Browser = await p.chromium.connect(browserless_url, timeout=90000)
+            except Exception as connect_error:
+                # Erro específico para falha de conexão
+                raise HTTPException(status_code=504, detail=f"Não foi possível conectar ao serviço de navegador remoto: {connect_error}")
+
+            # Formata o número do processo
+            if len(process_number) == 20:
+                formatted_number = f"{process_number[:7]}-{process_number[7:9]}.{process_number[9:13]}.{process_number[13]}.{process_number[14:16]}.{process_number[16:]}"
+            else:
+                formatted_number = process_number
+            
+            # Executa o scraping
+            screenshot_path = await scrape_tjsp_process(browser, formatted_number)
+            
+            # Garante que o navegador seja fechado após o uso
+            if browser:
+                await browser.close()
+
+            return {"message": "Scraping test completed.", "screenshot_path": screenshot_path}
+
+    except HTTPException as http_exc:
+        # Re-levanta exceções HTTP para que o FastAPI as trate
+        raise http_exc
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"An error occurred during scraping: {str(e)}")
+        # Captura outras exceções gerais durante o processo
+        if browser:
+            await browser.close()
+        raise HTTPException(status_code=500, detail=f"Ocorreu um erro durante o scraping: {str(e)}")
 
 
 
