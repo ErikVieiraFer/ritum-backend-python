@@ -402,28 +402,7 @@ async def test_scrape_process(process_number: str, request: Request, current_use
             status_code=500,
             detail=f"An error occurred during scraping: {str(e)}")
 
-# ADICIONE ESTE ENDPOINT DE DEPURAÇÃO TEMPORÁRIO
-@app.get("/debug-browserless", tags=["Debug"], include_in_schema=True)
-async def debug_browserless_connection():
-    """
-    Tenta estabelecer uma conexão WebSocket direta com o Browserless.io
-    para diagnosticar problemas de conectividade.
-    """
-    browserless_url = os.getenv("BROWSERLESS_URL")
-    if not browserless_url:
-        raise HTTPException(status_code=500, detail="BROWSERLESS_URL não está configurada no ambiente.")
 
-    try:
-        print(f"--- DEBUG: Tentando conectar via WebSocket para {browserless_url[:40]}... ---")
-        async with websockets.connect(browserless_url, open_timeout=20) as websocket:
-            # Se a linha acima funcionar, a conexão foi um sucesso.
-            print("--- DEBUG: Conexão WebSocket estabelecida com sucesso! ---")
-            return {"status": "success", "message": "A conexão WebSocket com o Browserless.io foi bem-sucedida!"}
-    except Exception as e:
-        print(f"--- DEBUG: ERRO REAL na conexão WebSocket ---")
-        print(f"--- Tipo do Erro: {type(e).__name__} ---")
-        print(f"--- Detalhes: {e} ---")
-        raise HTTPException(status_code=500, detail=f"Falha na conexão WebSocket: {e}")
 
 
 if __name__ == "__main__":
