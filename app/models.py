@@ -1,9 +1,10 @@
 # ritum-backend/app/models.py
 
+import uuid
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, ForeignKey, Text, DateTime
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from .database import Base
 
@@ -99,7 +100,7 @@ class TaskCard(Base):
 class ExtrajudicialCase(Base):
     __tablename__ = "extrajudicial_cases"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     case_type = Column(String, nullable=False)
     case_name = Column(String, nullable=False)

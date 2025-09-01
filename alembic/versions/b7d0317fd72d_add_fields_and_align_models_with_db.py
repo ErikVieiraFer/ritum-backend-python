@@ -1,8 +1,8 @@
-"""Add fields to users and clients
+"""Add fields and align models with db
 
-Revision ID: 3f3ab8bea2ae
+Revision ID: b7d0317fd72d
 Revises: 1cd60594c6cd
-Create Date: 2025-09-01 15:23:59.273599
+Create Date: 2025-09-01 15:42:30.013801
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '3f3ab8bea2ae'
+revision: str = 'b7d0317fd72d'
 down_revision: Union[str, Sequence[str], None] = '1cd60594c6cd'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,12 +34,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_clients_cpf'), 'clients', ['cpf'], unique=True)
     op.create_index(op.f('ix_clients_full_name'), 'clients', ['full_name'], unique=False)
     op.drop_column('clients', 'name')
-    op.alter_column('extrajudicial_cases', 'id',
-               existing_type=sa.UUID(),
-               type_=sa.Integer(),
-               existing_nullable=False,
-               autoincrement=True)
-    op.create_index(op.f('ix_extrajudicial_cases_id'), 'extrajudicial_cases', ['id'], unique=False)
     op.add_column('users', sa.Column('oab_number', sa.String(), nullable=True))
     op.add_column('users', sa.Column('oab_state', sa.String(), nullable=True))
     op.add_column('users', sa.Column('cpf', sa.String(), nullable=True))
@@ -58,12 +52,6 @@ def downgrade() -> None:
     op.drop_column('users', 'cpf')
     op.drop_column('users', 'oab_state')
     op.drop_column('users', 'oab_number')
-    op.drop_index(op.f('ix_extrajudicial_cases_id'), table_name='extrajudicial_cases')
-    op.alter_column('extrajudicial_cases', 'id',
-               existing_type=sa.Integer(),
-               type_=sa.UUID(),
-               existing_nullable=False,
-               autoincrement=True)
     op.add_column('clients', sa.Column('name', sa.VARCHAR(), autoincrement=False, nullable=True))
     op.drop_index(op.f('ix_clients_full_name'), table_name='clients')
     op.drop_index(op.f('ix_clients_cpf'), table_name='clients')
