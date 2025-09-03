@@ -46,24 +46,14 @@ static_dir = Path(__file__).parent / "static"
 static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Configuração do CORS
-# Lista de origens permitidas (domínios estáticos de produção e outros)
-origins = [
-    "https://ritum-app.web.app",  # URL de produção do frontend
-]
-
-# Adiciona a URL externa do Render, se disponível (bom para health checks)
-render_url = os.getenv("RENDER_EXTERNAL_URL")
-if render_url:
-    origins.append(render_url)
-
+# Configuração do CORS (MODO DE DIAGNÓSTICO)
+# Temporariamente permitindo todas as origens para diagnosticar o problema.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_origin_regex=r"http://localhost:.*",  # Permite qualquer porta no localhost para desenvolvimento
+    allow_origins=["*"],  # ATENÇÃO: Permitir todas as origens
     allow_credentials=True,
-    allow_methods=["*"],  # Permitir todos os métodos
-    allow_headers=["*"],  # Permitir todos os cabeçalhos
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # --- Endpoints de Autenticação e Usuários ---
