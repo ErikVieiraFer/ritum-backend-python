@@ -5,8 +5,7 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements.txt
-      alembic downgrade base && alembic upgrade head
-      playwright install --with-deps chromium
+      alembic stamp base
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
