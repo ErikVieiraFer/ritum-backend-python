@@ -46,11 +46,18 @@ static_dir = Path(__file__).parent / "static"
 static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
-# Configuração do CORS (MODO DE DIAGNÓSTICO)
-# Temporariamente permitindo todas as origens para diagnosticar o problema.
+# Configuração do CORS
+origins = [
+    "https://ritum-app.web.app",  # URL de produção do seu front-end
+    "http://localhost",          # Para desenvolvimento local
+    "http://localhost:3000",     # Porta comum para React/Vue/etc
+    "http://localhost:8081",     # Porta comum para Expo Go
+    "http://localhost:8080",     # Outra porta comum
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ATENÇÃO: Permitir todas as origens
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
