@@ -21,11 +21,17 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 def authenticate_user(db: Session, email: str, password: str):
-    """Autentica um usuário, verificando email e senha."""
+    """
+    Autentica um usuário, verificando email e senha.
+    Retorna uma tupla (user, error_code).
+    error_code pode ser 'user_not_found' ou 'invalid_password'.
+    """
     user = get_user_by_email(db, email=email)
-    if not user or not security.verify_password(password, user.hashed_password):
-        return None
-    return user
+    if not user:
+        return None, "user_not_found"
+    if not security.verify_password(password, user.hashed_password):
+        return None, "invalid_password"
+    return user, None
 
 def get_user_by_id(db: Session, user_id: UUID):
     """Busca um usuário pelo seu ID."""

@@ -58,7 +58,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,13 +75,27 @@ def create_user_endpoint(user: schemas.UserCreate, db: Session = Depends(get_db)
 
 @app.post("/token", response_model=schemas.Token, tags=["Autenticação e Usuários"])
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = crud.authenticate_user(db, email=form_data.username, password=form_data.password)
-    if not user:
+    user, error = crud.authenticate_user(db, email=form_data.username, password=form_data.password)
+    
+    if error == "user_not_found":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuário com este email não foi encontrado.",
+        )
+    if error == "invalid_password":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou senha incorretos",
+            detail="A senha fornecida está incorreta.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not user:
+        # Fallback genérico para outros erros inesperados
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email ou senha incorretos.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
     access_token = security.create_access_token(data={"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
