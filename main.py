@@ -25,6 +25,7 @@ except ImportError:
 
 from typing import List, Optional
 from uuid import UUID
+from datetime import date
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
