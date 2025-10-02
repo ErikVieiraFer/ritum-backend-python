@@ -27,6 +27,7 @@ class User(Base):
     clients = relationship("Client", back_populates="owner", cascade="all, delete-orphan")
     task_columns = relationship("TaskColumn", back_populates="owner", cascade="all, delete-orphan")
     extrajudicial_cases = relationship("ExtrajudicialCase", back_populates="owner", cascade="all, delete-orphan")
+    intimations = relationship("Intimation", back_populates="owner", cascade="all, delete-orphan")
 
 # --- MODELO DE CLIENTE ---
 class Client(Base):
@@ -121,3 +122,16 @@ class JurisprudenceDocument(Base):
     publication_date = Column(DateTime, nullable=False)
     summary = Column(Text, nullable=False)
     full_text = Column(Text, nullable=False)
+
+# --- MODELO DE INTIMAÇÕES ---
+class Intimation(Base):
+    __tablename__ = "intimations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    publication_date = Column(DateTime, nullable=False, index=True)
+    process_number = Column(String, index=True)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    owner = relationship("User", back_populates="intimations")

@@ -393,3 +393,21 @@ def search_jurisprudence_documents(
 
     # Aplica paginação e retorna os resultados
     return db_query.offset(skip).limit(limit).all()
+
+# --- Funções de Intimações ---
+def get_intimations_stats(db: Session, user_id: UUID, start_date: date, end_date: date) -> int:
+    """Conta o número de intimações para um usuário dentro de um intervalo de datas."""
+    # Converte as datas para datetime para corresponder ao tipo do modelo (DateTime)
+    start_datetime = datetime.combine(start_date, datetime.min.time())
+    end_datetime = datetime.combine(end_date, datetime.max.time())
+
+    count = (
+        db.query(models.Intimation)
+        .filter(
+            models.Intimation.owner_id == user_id,
+            models.Intimation.publication_date >= start_datetime,
+            models.Intimation.publication_date <= end_datetime,
+        )
+        .count()
+    )
+    return count

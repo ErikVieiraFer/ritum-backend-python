@@ -298,3 +298,22 @@ class GenerateDocumentRequest(BaseModel):
 class GenerateDocumentResponse(BaseModel):
     documentUrl: str
     fileName: str
+
+# ==============================================================================
+# SCHEMAS DE INTIMAÇÕES
+# ==============================================================================
+
+class IntimationBase(BaseModel):
+    publication_date: date
+    process_number: str
+    content: str
+
+class Intimation(IntimationBase):
+    id: UUID
+    owner_id: UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class IntimationStats(BaseModel):
+    count: int

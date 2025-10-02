@@ -401,6 +401,24 @@ async def test_scrape_process(process_number: str, current_user: models.User = D
         raise HTTPException(status_code=500, detail=f"Ocorreu um erro durante o scraping: {str(e)}")
 
 
+# --- Endpoints de Intimações ---
+@app.get("/api/v1/intimations/stats", response_model=schemas.IntimationStats, tags=["Intimações"])
+def get_intimations_statistics(
+    start_date: date,
+    end_date: date,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Retorna a contagem de intimações para o usuário logado dentro de um período específico.
+    """
+    count = crud.get_intimations_stats(
+        db=db, 
+        user_id=current_user.id, 
+        start_date=start_date, 
+        end_date=end_date
+    )
+    return {"count": count}
 
 
 if __name__ == "__main__":
