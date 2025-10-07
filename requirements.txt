@@ -1,18 +1,37 @@
-fastapi
-uvicorn[standard]
-gunicorn
-sqlalchemy
-alembic
-psycopg2-binary
-python-dotenv
-passlib[bcrypt]
-python-jose[cryptography]
-google-generativeai
-playwright==1.54.0
-websockets==15.0.1
-requests
-python-docx
-docxtpl
-docxcompose
-email-validator
-python-multipart
+# === FastAPI ===
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+gunicorn>=23.0.0
+python-multipart>=0.0.12
+
+# === Database ===
+sqlalchemy>=2.0.36
+alembic>=1.14.0
+psycopg2-binary>=2.9.10
+
+# === Segurança ===
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-dotenv>=1.0.1
+
+# === Pydantic ===
+pydantic>=2.10.5
+pydantic-settings>=2.7.0
+email-validator>=2.2.0
+
+# === IA / APIs Externas ===
+google-generativeai>=0.8.3
+requests>=2.32.3
+chromadb>=0.5.23
+
+# === Web Scraping ===
+playwright>=1.49.0
+websockets>=14.1
+
+# === Documentos ===
+python-docx>=1.1.2
+docxtpl>=0.18.0
+docxcompose>=1.4.0
+
+# === Utilitários ===
+python-dateutil>=2.9.0

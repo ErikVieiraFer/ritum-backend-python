@@ -317,3 +317,8 @@ class Intimation(IntimationBase):
 
 class IntimationStats(BaseModel):
     count: int
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
