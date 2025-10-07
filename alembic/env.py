@@ -1,43 +1,57 @@
 """
-Alembic environment configuration.
+Configuração do Alembic para migrações do banco de dados.
 """
 
-import sys
-import os
 from logging.config import fileConfig
-
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Adicionar pasta pai ao path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Importações corretas após refatoração
+from app.core.config import settings
+from app.database import Base
 
-# Importar Base e models
-from app.database import Base, SQLALCHEMY_DATABASE_URL
-from app.models import (
-    User, Client, Process, ProcessUpdate,
-    TaskColumn, TaskCard,
-    ExtrajudicialCase, JurisprudenceDocument, Intimation
-)
+# Importar todos os modelos para garantir que o Alembic os detecte
+from app import models
 
-# Alembic Config object
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Metadata para autogenerate
+# add your model's MetaData object here
+# for 'autogenerate' support
 target_metadata = Base.metadata
 
-# Configurar URL do banco
-config.set_main_option("sqlalchemy.url", str(SQLALCHEMY_DATABASE_URL))
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+
+
+def get_url():
+    """Obtém a URL do banco de dados da configuração."""
+    return settings.DATABASE_URL
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode."""
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = get_url()
     context.configure(
-        url=str(SQLALCHEMY_DATABASE_URL),
+        url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -48,9 +62,15 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+    # Sobrescreve a URL do sqlalchemy no alembic.ini
     configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = str(SQLALCHEMY_DATABASE_URL)
+    configuration["sqlalchemy.url"] = get_url()
     
     connectable = engine_from_config(
         configuration,
@@ -60,7 +80,7 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection,
+            connection=connection, 
             target_metadata=target_metadata
         )
 
